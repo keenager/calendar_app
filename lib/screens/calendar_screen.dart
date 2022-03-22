@@ -69,12 +69,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
         // }
         if (snapshot.hasError) {
           return const Text('Some error...');
-        }
-        if (!snapshot.hasData) {
+        } else if (snapshot.connectionState == ConnectionState.done &&
+            !snapshot.hasData) {
           return const Text('Document does not exist...');
         }
 
-        final _eventDocs = snapshot.data!.docs;
+        final _eventDocs = snapshot.data == null ? [] : snapshot.data!.docs;
         final _selectedEventDocs = _eventDocs
             .where((doc) => doc.data()['date'].toDate().day == _selectedDay.day)
             .toList();
@@ -163,11 +163,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 });
               },
               eventLoader: (day) {
-                final sameDayDocs = _eventDocs.where((element) =>
-                    element.data()['date'].toDate().day == day.day);
-                final sameDayContents =
-                    sameDayDocs.map((e) => e.data()['content']);
-                return sameDayContents.toList();
+                final sameDayDocs = _eventDocs.where((e) =>
+                    e.data()['date'].toDate().month == day.month &&
+                    e.data()['date'].toDate().day == day.day);
+                return sameDayDocs.toList();
               },
             ),
             Expanded(

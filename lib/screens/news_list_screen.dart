@@ -2,39 +2,6 @@ import 'package:calendar_app/screens/news_article_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:web_scraper/web_scraper.dart';
 
-// const newsData = {
-//   'hani_editorial': {
-//     'newsName': '한겨레 사설,칼럼',
-//     'url': 'https://www.hani.co.kr/arti/opinion/editorial/',
-//     'selector': 'div.list h4.ranktitle > a'
-//   },
-//   'hani_most': {
-//     'newsName': '한겨례 많이 본 기사',
-//     'url': 'https://www.hani.co.kr/arti/list.html',
-//     'selector': 'div.list h4.ranktitle > a'
-//   },
-//   'khan_opinion': {
-//     'newsName': '경향 오피니언',
-//     'url': 'https://www.khan.co.kr/opinion',
-//     'selector': '.art-list li > a'
-//   },
-//   'khan_most': {
-//     'newsName': '경향 종합 실시간',
-//     'url': 'https://www.khan.co.kr/realtime/articles',
-//     'selector': '.art-list li'
-//   },
-//   'sisain1': {
-//     'newsName': '시사인 주요 기사 1',
-//     'url': 'https://www.sisain.co.kr',
-//     'selector': 'li.auto-col'
-//   },
-//   'sisain2': {
-//     'newsName': '시사인 주요 기사 2',
-//     'url': 'https://www.sisain.co.kr',
-//     'selector': 'li.clearfix'
-//   }
-// };
-
 const List newsData = [
   {
     'newsName': '한겨레 사설,칼럼',
@@ -93,9 +60,9 @@ class News {
       if (newsName.contains('중앙')) {
         newsList.removeRange(0, 5); //중앙사설칼럼은 앞에 5개가 불필요한 것이어서 삭제
       }
-      newsList.forEach((element) {
-        element.addAll({'newsName': newsName});
-      });
+      for (var e in newsList) {
+        e.addAll({'newsName': newsName});
+      }
       newsList.insert(0, {'newsName': newsName});
     }
     return newsList;
@@ -127,9 +94,9 @@ class _NewsListScreenState extends State<NewsListScreen> {
           );
         }
         List<Map<String, dynamic>> newsList = [];
-        snapshot.data!.forEach((element) {
-          newsList = [...newsList, ...element];
-        });
+        for (var e in snapshot.data!) {
+          newsList = [...newsList, ...e];
+        }
         return ListView.separated(
           itemCount: newsList.length,
           separatorBuilder: (context, index) => const Divider(),
