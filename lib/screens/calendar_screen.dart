@@ -58,8 +58,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               isGreaterThanOrEqualTo:
                   DateTime(_focusedDay.year, _focusedDay.month, 1))
           .where('date',
-              isLessThanOrEqualTo:
-                  DateTime(_focusedDay.year, _focusedDay.month, 31))
+              isLessThan: DateTime(_focusedDay.year, _focusedDay.month + 1, 1))
           // .orderBy('time', descending: false)
           .get(),
       builder: (BuildContext context,
@@ -76,7 +75,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
         final _eventDocs = snapshot.data == null ? [] : snapshot.data!.docs;
         final _selectedEventDocs = _eventDocs
-            .where((doc) => doc.data()['date'].toDate().day == _selectedDay.day)
+            .where((doc) =>
+                doc.data()['date'].toDate().month == _selectedDay.month &&
+                doc.data()['date'].toDate().day == _selectedDay.day)
             .toList();
 
         return Column(
@@ -163,9 +164,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 });
               },
               eventLoader: (day) {
-                final sameDayDocs = _eventDocs.where((e) =>
-                    e.data()['date'].toDate().month == day.month &&
-                    e.data()['date'].toDate().day == day.day);
+                final sameDayDocs = _eventDocs.where((doc) =>
+                    doc.data()['date'].toDate().month == day.month &&
+                    doc.data()['date'].toDate().day == day.day);
                 return sameDayDocs.toList();
               },
             ),

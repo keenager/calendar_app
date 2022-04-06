@@ -1,12 +1,16 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../src/navigation_controls.dart';
 
 class NewsArticleScreen extends StatefulWidget {
   final String newsName;
   final String title;
   final String href;
-  const NewsArticleScreen(this.newsName, this.title, this.href, {Key? key})
+  final Completer<WebViewController> controller;
+  const NewsArticleScreen(this.newsName, this.title, this.href, this.controller,
+      {Key? key})
       : super(key: key);
 
   @override
@@ -30,13 +34,47 @@ class _NewsArticleScreenState extends State<NewsArticleScreen> {
       href = Uri.https(uri.host, uri.path).toString();
     }
 
+    int loadingPercentage = 0;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [NavigationControls(controller: widget.controller)],
       ),
-      body: WebView(
-        initialUrl: href,
-        javascriptMode: JavascriptMode.unrestricted,
+      body: Stack(
+        children: [
+          WebView(
+            initialUrl: href,
+            javascriptMode: JavascriptMode.unrestricted,
+            onWebViewCreated: (webViewController) {
+              widget.controller.complete(webViewController);
+            },
+            // onPageStarted: (url) {
+            //   setState(() {
+            //     loadingPercentage = 0;
+            //   });
+            // },
+            // onProgress: (progress) {
+            //   setState(() {
+            //     loadingPercentage = progress;
+            //   });
+            // },
+            // onPageFinished: (url) {
+            //   setState(() {
+            //     loadingPercentage = 100;
+            //   });
+            // },
+          ),
+          // if (loadingPercentage < 100)
+          //   Center(
+          //     child: SizedBox(
+          //       width: 300,
+          //       child: LinearProgressIndicator(
+          //         value: loadingPercentage / 100.0,
+          //       ),
+          //     ),
+          //   ),
+        ],
       ),
     );
   }

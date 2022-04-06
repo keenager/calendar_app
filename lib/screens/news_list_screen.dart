@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:calendar_app/screens/news_article_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:web_scraper/web_scraper.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 const List newsData = [
   {
@@ -77,6 +79,8 @@ class NewsListScreen extends StatefulWidget {
 }
 
 class _NewsListScreenState extends State<NewsListScreen> {
+  final controller = Completer<WebViewController>();
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -126,6 +130,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
                             newsList[index]['newsName'],
                             newsList[index]['title'],
                             newsList[index]['attributes']['href'],
+                            controller,
                           ),
                         ),
                       );
