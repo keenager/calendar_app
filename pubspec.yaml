@@ -38,8 +38,10 @@ dependencies:
   firebase_core: ^1.13.1
   cloud_firestore: ^3.1.10
   intl: ^0.17.0
-  web_scraper: ^0.1.4
   webview_flutter: ^3.0.1
+  http: ^0.13.4
+  shared_preferences: ^2.0.15
+  get: ^4.6.5 
 
 
 dev_dependencies:

@@ -1,73 +1,27 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:calendar_app/screens/news_article_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:web_scraper/web_scraper.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:http/http.dart' as http;
 
-const List newsData = [
-  {
-    'newsName': '한겨레 사설,칼럼',
-    'url': 'https://www.hani.co.kr/arti/opinion/editorial',
-    'selector': 'div.list h4.ranktitle > a'
-  },
-  {
-    'newsName': '한겨례 많이 본 기사',
-    'url': 'https://www.hani.co.kr/arti/list.html',
-    'selector': 'div.list h4.ranktitle > a'
-  },
-  // {
-  //   'newsName': '경향 오피니언',
-  //   'url': 'https://www.khan.co.kr/opinion',
-  //   'selector': 'div.art-list li a'
-  // },
-  // {
-  //   'newsName': '경향 종합 실시간',
-  //   'url': 'https://www.khan.co.kr/realtime/articles',
-  //   'selector': 'div.art-list li a'
-  // },
-  {
-    'newsName': '시사인 주요 기사 1',
-    'url': 'https://www.sisain.co.kr',
-    'selector': 'li.auto-col > a'
-  },
-  {
-    'newsName': '시사인 주요 기사 2',
-    'url': 'https://www.sisain.co.kr',
-    'selector': 'li.clearfix > a.cover'
-  },
-  {
-    'newsName': '중앙 사설,칼럼',
-    'url': 'https://www.joongang.co.kr/opinion/editorialcolumn',
-    'selector': 'div.card_body h2 > a'
-  },
-  {
-    'newsName': '뉴스 페퍼민트',
-    'url': 'https://newspeppermint.com/',
-    'selector': 'h6 a'
-  },
-];
+Future<List<dynamic>> fetchNewsNames() async {
+  Uri url = Uri.parse('http://146.56.136.197/scrap/getNewsNames');
+  http.Response response = await http.get(url);
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else {
+    throw Exception('Failed to load...');
+  }
+}
 
-class News {
-  final String newsName;
-  final String url;
-  final String selector;
-
-  const News(this.newsName, this.url, this.selector);
-  Future<List<Map<String, dynamic>>> fetchData() async {
-    List<Map<String, dynamic>> newsList = [];
-    Uri uri = Uri.parse(url);
-    final webSraper = WebScraper(uri.origin);
-    if (await webSraper.loadWebPage(uri.path)) {
-      newsList = webSraper.getElement(selector, ['href']);
-      if (newsName.contains('중앙')) {
-        newsList.removeRange(0, 5); //중앙사설칼럼은 앞에 5개가 불필요한 것이어서 삭제
-      }
-      for (var e in newsList) {
-        e.addAll({'newsName': newsName});
-      }
-      newsList.insert(0, {'newsName': newsName});
-    }
-    return newsList;
+Future<Map<String, dynamic>> fetchData(String newsName) async {
+  Uri url2 = Uri.parse('http://146.56.136.197/scrap/getData/' + newsName);
+  http.Response response = await http.get(url2);
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else {
+    throw Exception('Failed to load...');
   }
 }
 
@@ -79,64 +33,98 @@ class NewsListScreen extends StatefulWidget {
 }
 
 class _NewsListScreenState extends State<NewsListScreen> {
-  final controller = Completer<WebViewController>();
+  late Future<List<dynamic>> newsNames;
+
+  @override
+  void initState() {
+    super.initState();
+    newsNames = fetchNewsNames();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: Future.wait(newsData.map((elem) =>
-          News(elem['newsName'], elem['url'], elem['selector']).fetchData())),
-      builder: (BuildContext context,
-          AsyncSnapshot<List<List<Map<String, dynamic>>>> snapshot) {
+    return FutureBuilder<List<dynamic>>(
+      future: newsNames,
+      builder: (context, snapshot) {
+        List<dynamic> newsNames = snapshot.data!;
+        return NewsList(newsNames);
+      },
+    );
+  }
+}
+
+class NewsList extends StatefulWidget {
+  final List<dynamic> newsNames;
+  const NewsList(this.newsNames, {Key? key}) : super(key: key);
+
+  @override
+  State<NewsList> createState() => _NewsListState();
+}
+
+class _NewsListState extends State<NewsList> {
+  final controller = Completer<WebViewController>();
+  late Future<List<Map<String, dynamic>>> newsList;
+
+  @override
+  void initState() {
+    super.initState();
+    newsList =
+        Future.wait(widget.newsNames.map((newsName) => fetchData(newsName)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: newsList,
+      builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(),
           );
-        } else if (!snapshot.hasData) {
-          return const Center(
-            child: Text('No data...'),
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text('${snapshot.error}'),
           );
         }
-        List<Map<String, dynamic>> newsList = [];
+
+        List<dynamic> newsList = [];
         for (var e in snapshot.data!) {
-          newsList = [...newsList, ...e];
+          newsList = [...newsList, e['newsName'], ...e['newsList']];
         }
+        String newsName = '';
+
         return ListView.separated(
           itemCount: newsList.length,
-          separatorBuilder: (context, index) => const Divider(),
           itemBuilder: (context, index) {
-            return newsList[index].keys.length == 1
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: SizedBox(
-                      child: Text(
-                        newsList[index]['newsName'],
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+            if (newsList[index] is String) {
+              newsName = newsList[index];
+            }
+            return ListTile(
+              title: newsList[index] is String
+                  ? Text(
+                      newsName,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
+                    )
+                  : Text(newsList[index]['title']),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => NewsArticleScreen(
+                      newsList[index]['title'],
+                      newsList[index]['link'],
+                      controller,
                     ),
-                  )
-                : ListTile(
-                    title: Text(newsList[index]['title'].replaceAll('\n', '')),
-                    // subtitle:
-                    //     Text(newsList[index]['attributes']?['href'] ?? 'null'),
-                    visualDensity: const VisualDensity(vertical: -4),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => NewsArticleScreen(
-                            newsList[index]['newsName'],
-                            newsList[index]['title'],
-                            newsList[index]['attributes']['href'],
-                            controller,
-                          ),
-                        ),
-                      );
-                    },
-                  );
+                  ),
+                );
+              },
+            );
           },
+          separatorBuilder: (context, index) => const Divider(),
         );
       },
     );

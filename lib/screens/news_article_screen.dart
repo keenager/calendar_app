@@ -5,12 +5,10 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../src/navigation_controls.dart';
 
 class NewsArticleScreen extends StatefulWidget {
-  final String newsName;
   final String title;
   final String href;
   final Completer<WebViewController> controller;
-  const NewsArticleScreen(this.newsName, this.title, this.href, this.controller,
-      {Key? key})
+  const NewsArticleScreen(this.title, this.href, this.controller, {Key? key})
       : super(key: key);
 
   @override
@@ -27,14 +25,14 @@ class _NewsArticleScreenState extends State<NewsArticleScreen> {
   @override
   Widget build(BuildContext context) {
     String href = '';
-    if (widget.newsName.contains('시사인')) {
-      href = 'https://www.sisain.co.kr' + widget.href;
+    Uri uri = Uri.parse(widget.href);
+    if (uri.host.contains('sisain')) {
+      href = Uri.https(uri.host, uri.path, uri.queryParameters).toString();
     } else {
-      Uri uri = Uri.parse(widget.href);
       href = Uri.https(uri.host, uri.path).toString();
     }
 
-    int loadingPercentage = 0;
+    // int loadingPercentage = 0;
 
     return Scaffold(
       appBar: AppBar(
