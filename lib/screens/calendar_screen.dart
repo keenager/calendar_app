@@ -217,6 +217,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             _selectedEventDocs[index]
                                 .reference
                                 .update({'content': _controller.text});
+                            _eventDocs = getEventDocsOfTheMonth(_selectedDay);
                             Get.back();
                           });
                         },
