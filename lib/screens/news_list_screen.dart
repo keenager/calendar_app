@@ -1,11 +1,7 @@
-import 'dart:async';
-import 'dart:convert';
+import 'package:calendar_app/constants/news_data_list.dart';
+import 'package:calendar_app/utils/get_article_list.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
-
-const fetchUrl =
-    'https://keenager-calendar.netlify.app/.netlify/functions/getData';
 
 class NewsListScreen extends StatefulWidget {
   const NewsListScreen({Key? key}) : super(key: key);
@@ -15,18 +11,20 @@ class NewsListScreen extends StatefulWidget {
 }
 
 class _NewsListScreenState extends State<NewsListScreen> {
-  late Future<http.Response> response;
+  late Future<List<List<Map<String, String?>>>> futureListOfArticleList;
 
   @override
   void initState() {
     super.initState();
-    response = http.get(Uri.parse(fetchUrl));
+    var futureList =
+        newsDataList.map((newsData) => getArticleList(newsData)).toList();
+    futureListOfArticleList = Future.wait(futureList);
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<http.Response>(
-      future: response,
+    return FutureBuilder<List<List<Map<String, String?>>>>(
+      future: futureListOfArticleList,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -46,48 +44,48 @@ class _NewsListScreenState extends State<NewsListScreen> {
 }
 
 class NewsList extends StatelessWidget {
-  final http.Response response;
-  const NewsList(this.response, {Key? key}) : super(key: key);
+  final List<List<Map<String, String?>>> listOfArticleList;
+
+  const NewsList(this.listOfArticleList, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    List<dynamic> newsList = json.decode(response.body);
-    var newsList2 = [];
+    var newsList = [];
 
-    newsList.forEach((news) {
-      newsList2
-        ..add(news['newsName'])
-        ..addAll(news['articleList']);
+    listOfArticleList.asMap().forEach((index, articleList) {
+      newsList
+        ..add(newsDataList[index]['title'])
+        ..addAll(articleList);
     });
 
     return ListView.separated(
-      itemCount: newsList2.length,
+      itemCount: newsList.length,
       itemBuilder: (context, index) {
         return ListTile(
-          title: newsList2[index] is String
+          title: newsList[index] is String
               ? Text(
-                  newsList2[index],
+                  newsList[index],
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold),
                 )
-              : Text(newsList2[index]['title']),
+              : Text(newsList[index]['title']),
           onTap: () async {
-            if (newsList2[index] is String) {
+            if (newsList[index] is String) {
               return;
             }
 
-            Uri _url = Uri.parse(newsList2[index]['link']);
-            if (!_url.hasScheme) {
-              _url = _url.replace(scheme: 'https');
+            Uri url = Uri.parse(newsList[index]['link']);
+            if (!url.hasScheme) {
+              url = url.replace(scheme: 'https');
             }
 
             try {
-              await launchUrl(_url);
+              await launchUrl(url, mode: LaunchMode.externalApplication);
             } catch (e) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('$_url 를 열 수 없습니다.'),
+                  content: Text('$url 를 열 수 없습니다.'),
                 ),
               );
             }
