@@ -39,4 +39,14 @@ const List<Map<String, String>> newsDataList = [
     "url": "https://newspeppermint.com/",
     "selector": "h6",
   },
+  {
+    "title": "법률신문 뉴스",
+    "url": "https://m.lawtimes.co.kr/sub/article",
+    "selector": ".article-list-special li"
+  },
+  {
+    "title": "법률신문 판결기사",
+    "url": "https://m.lawtimes.co.kr/sub/info",
+    "selector": '.article-list-img',
+  },
 ];

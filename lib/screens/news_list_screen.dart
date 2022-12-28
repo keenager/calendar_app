@@ -23,22 +23,28 @@ class _NewsListScreenState extends State<NewsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<List<Map<String, String?>>>>(
-      future: futureListOfArticleList,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return const Center(
-            child: Text('Error has occured...'),
-          );
-        } else if (!snapshot.hasData) {
-          return const Center(
-            child: Text('No data...'),
-          );
-        }
-        return NewsList(snapshot.data!);
-      },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('뉴스'),
+        centerTitle: true,
+      ),
+      body: FutureBuilder<List<List<Map<String, String?>>>>(
+        future: futureListOfArticleList,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error has occured...\n${snapshot.error}'),
+            );
+          } else if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (!snapshot.hasData) {
+            return const Center(
+              child: Text('No data...'),
+            );
+          }
+          return NewsList(snapshot.data!);
+        },
+      ),
     );
   }
 }

@@ -1,4 +1,4 @@
-import 'package:calendar_app/controllers/screen_controller.dart';
+import 'package:calendar_app/controllers/user_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -13,6 +13,8 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
+  final userController = Get.put(UserController());
+
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
@@ -42,287 +44,310 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _eventDocs,
-      builder: (BuildContext context,
-          AsyncSnapshot<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
-              snapshot) {
-        if (snapshot.hasError) {
-          return Text('Error occurred...\n${snapshot.error}');
-        } else if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (!snapshot.hasData) {
-          return const Text('Document does not exist...');
-        }
-        // final List<QueryDocumentSnapshot<Map<String, dynamic>>> _eventDocs =
-        //     snapshot.data == null ? [] : snapshot.data!.docs;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('우리의 일정'),
+        centerTitle: true,
+        actions: [
+          TextButton.icon(
+            style: ButtonStyle(
+                foregroundColor: MaterialStateProperty.all(Colors.white)),
+            icon: const Icon(Icons.supervised_user_circle),
+            label: Obx(() => Text(userController.user.value)),
+            onPressed: () => Get.toNamed('/user'),
+          ),
+        ],
+      ),
+      body: FutureBuilder(
+        future: _eventDocs,
+        builder: (BuildContext context,
+            AsyncSnapshot<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+                snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error occurred...\n${snapshot.error}'));
+          } else if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (!snapshot.hasData) {
+            return const Center(child: Text('Document does not exist...'));
+          }
+          // final List<QueryDocumentSnapshot<Map<String, dynamic>>> _eventDocs =
+          //     snapshot.data == null ? [] : snapshot.data!.docs;
 
-        List<QueryDocumentSnapshot<Map<String, dynamic>>> getEventDocsOfTheDay(
-            DateTime dateTime) {
-          return snapshot.data!
-              .where((doc) =>
-                  doc.data()['date'].toDate().month == dateTime.month &&
-                  doc.data()['date'].toDate().day == dateTime.day)
-              .toList();
-        }
+          List<QueryDocumentSnapshot<Map<String, dynamic>>>
+              getEventDocsOfTheDay(DateTime givenDate) {
+            return snapshot.data!.where((doc) {
+              DateTime fetchedDate = (doc.get('date') as Timestamp).toDate();
+              return fetchedDate.month == givenDate.month &&
+                  fetchedDate.day == givenDate.day;
+            }).toList();
+          }
 
-        _selectedEventDocs = getEventDocsOfTheDay(_selectedDay);
+          _selectedEventDocs = getEventDocsOfTheDay(_selectedDay);
 
-        return Column(
-          children: [
-            TableCalendar(
-              calendarBuilders: CalendarBuilders(
-                markerBuilder: (context, day,
-                    List<QueryDocumentSnapshot<Map<String, dynamic>>> events) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      events.length,
-                      (index) => Icon(
-                        Icons.circle,
-                        size: 12,
-                        color: events[index].data()['user'] == 'YS'
-                            ? Colors.indigo
-                            : Colors.pink,
-                      ),
-                    ),
-                  );
+          return Column(
+            children: [
+              TableCalendar(
+                locale: 'ko_KR',
+                firstDay: DateTime.utc(2016, 5, 3),
+                lastDay: DateTime.utc(2050, 12, 31),
+                focusedDay: _focusedDay,
+                calendarFormat: _calendarFormat,
+                daysOfWeekStyle: const DaysOfWeekStyle(
+                  weekendStyle: TextStyle(color: Colors.red),
+                ),
+                calendarStyle: const CalendarStyle(
+                  weekendTextStyle: TextStyle(color: Colors.red),
+                ),
+                selectedDayPredicate: (day) {
+                  return isSameDay(_selectedDay, day);
                 },
-              ),
-              locale: 'ko_KR',
-              firstDay: DateTime.utc(2016, 5, 3),
-              lastDay: DateTime.utc(2050, 12, 31),
-              focusedDay: _focusedDay,
-              calendarFormat: _calendarFormat,
-              daysOfWeekStyle: const DaysOfWeekStyle(
-                weekendStyle: TextStyle(color: Colors.red),
-              ),
-              calendarStyle: const CalendarStyle(
-                weekendTextStyle: TextStyle(color: Colors.red),
-              ),
-              selectedDayPredicate: (day) {
-                return isSameDay(_selectedDay, day);
-              },
-              onDaySelected: (selectedDay, focusedDay) {
-                if (!isSameDay(_selectedDay, selectedDay)) {
-                  // Call `setState()` when updating the selected day
+                onDaySelected: (selectedDay, focusedDay) {
+                  if (!isSameDay(_selectedDay, selectedDay)) {
+                    // Call `setState()` when updating the selected day
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = focusedDay;
+                      _selectedEventDocs = getEventDocsOfTheDay(selectedDay);
+                    });
+                  }
+                },
+                onDayLongPressed: (day, day2) {},
+                onFormatChanged: (format) {
+                  if (_calendarFormat != format) {
+                    // Call `setState()` when updating calendar format
+                    setState(() {
+                      _calendarFormat = format;
+                    });
+                  }
+                },
+                onPageChanged: (focusedDay) {
+                  // No need to call `setState()` here
                   setState(() {
-                    _selectedDay = selectedDay;
                     _focusedDay = focusedDay;
-                    _selectedEventDocs = getEventDocsOfTheDay(selectedDay);
+                    _eventDocs = getEventDocsOfTheMonth(focusedDay);
                   });
-                }
-              },
-              onDayLongPressed: (day, day2) {
-                TextEditingController controller = TextEditingController();
-
-                Get.defaultDialog(
-                  title: '일정 입력',
-                  content: Column(
-                    children: [
-                      Text('${day.year}년 ${day.month}월 ${day.day}일'),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: controller,
-                        keyboardType: TextInputType.text,
-                        maxLines: null,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          filled: true,
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                          hintText: '일정을 입력하세요.',
+                },
+                eventLoader: (day) {
+                  return getEventDocsOfTheDay(day);
+                },
+                calendarBuilders: CalendarBuilders(
+                  markerBuilder: (context,
+                      day,
+                      List<QueryDocumentSnapshot<Map<String, dynamic>>>
+                          events) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        events.length,
+                        (index) => Icon(
+                          Icons.circle,
+                          size: 12,
+                          color: events[index].data()['user'] == 'YS'
+                              ? Colors.teal
+                              : Colors.orange,
                         ),
                       ),
-                    ],
-                  ),
-                  textConfirm: '저장',
-                  confirmTextColor: Colors.white,
-                  onConfirm: () async {
-                    if (controller.text.trim() == '') {
-                      return;
-                    }
-                    await _db.collection('schedule').add({
-                      'user': Get.find<ScreenController>().user.value,
-                      'date': DateTime(day.year, day.month, day.day),
-                      'content': controller.text,
-                      'time': Timestamp.now(),
-                    });
-                    setState(() {
-                      _selectedDay = day;
-                      _eventDocs = getEventDocsOfTheMonth(day);
-                      Get.back();
-                    });
+                    );
                   },
-                  textCancel: '취소',
-                );
-              },
-              onFormatChanged: (format) {
-                if (_calendarFormat != format) {
-                  // Call `setState()` when updating calendar format
-                  setState(() {
-                    _calendarFormat = format;
-                  });
-                }
-              },
-              onPageChanged: (focusedDay) {
-                // No need to call `setState()` here
-                setState(() {
-                  _focusedDay = focusedDay;
-                  _eventDocs = getEventDocsOfTheMonth(focusedDay);
-                });
-              },
-              eventLoader: (day) {
-                return getEventDocsOfTheDay(day);
-              },
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView.separated(
-                itemCount: _selectedEventDocs.length,
-                itemBuilder: (context, index) {
-                  return Dismissible(
-                    key: ValueKey<Timestamp>(
-                        _selectedEventDocs[index].get('time')),
-                    background: Container(
-                      color: Colors.red,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(
-                            2,
-                            (_) =>
-                                const Icon(Icons.delete, color: Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Divider(),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: _selectedEventDocs.length,
+                  itemBuilder: (context, index) {
+                    return Dismissible(
+                      key: ValueKey<Timestamp>(
+                          _selectedEventDocs[index].get('time')),
+                      background: Container(
+                        color: Colors.red,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(
+                              2,
+                              (_) => const Icon(Icons.delete,
+                                  color: Colors.white)),
+                        ),
                       ),
-                    ),
-                    confirmDismiss: (direction) async {
-                      bool isConfirm = false;
-                      await Get.defaultDialog(
-                        middleText: '이 스케줄을 지울까요?',
-                        textCancel: '취소',
-                        textConfirm: '삭제',
-                        confirmTextColor: Colors.white,
-                        onConfirm: () {
-                          isConfirm = true;
-                          Get.back();
-                        },
-                      );
-                      return isConfirm;
-                    },
-                    onDismissed: (direction) {
-                      setState(() {
-                        _selectedEventDocs[index].reference.delete();
-                        _eventDocs = getEventDocsOfTheMonth(_selectedDay);
-                      });
-                    },
-                    child: ListTile(
-                      title: Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: !_selectedEventDocs[index]
-                                    .data()
-                                    .containsKey('user')
-                                ? Colors.white
-                                : _selectedEventDocs[index]['user'] == 'YS'
-                                    ? Colors.teal
-                                    : Colors.orange,
-                            maxRadius: 12.0,
-                            child: Text(
-                              _selectedEventDocs[index]
+                      confirmDismiss: (direction) async {
+                        bool isConfirm = false;
+                        await Get.defaultDialog(
+                          middleText: '이 스케줄을 지울까요?',
+                          textCancel: '취소',
+                          textConfirm: '삭제',
+                          confirmTextColor: Colors.white,
+                          onConfirm: () {
+                            isConfirm = true;
+                            Get.back();
+                          },
+                        );
+                        return isConfirm;
+                      },
+                      onDismissed: (direction) {
+                        setState(() {
+                          _selectedEventDocs[index].reference.delete();
+                          _eventDocs = getEventDocsOfTheMonth(_selectedDay);
+                        });
+                      },
+                      child: ListTile(
+                        title: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: !_selectedEventDocs[index]
                                       .data()
                                       .containsKey('user')
-                                  ? _selectedEventDocs[index]['user']
-                                  : '',
-                              style: const TextStyle(color: Colors.white),
+                                  ? Colors.white
+                                  : _selectedEventDocs[index]['user'] == 'YS'
+                                      ? Colors.teal
+                                      : Colors.orange,
+                              maxRadius: 12.0,
+                              child: Text(
+                                _selectedEventDocs[index]
+                                        .data()
+                                        .containsKey('user')
+                                    ? _selectedEventDocs[index]['user']
+                                    : '',
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
-                          ),
-                          const SizedBox(
-                            width: 5,
-                          ),
-                          Text(
-                            _selectedEventDocs[index]['content'],
-                          ),
-                        ],
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () {
-                          TextEditingController controller =
-                              TextEditingController();
-                          controller.text =
-                              _selectedEventDocs[index].get('content');
-                          Timestamp timeStampOfDate =
-                              _selectedEventDocs[index].get('date');
-                          DateTime date = timeStampOfDate.toDate();
+                            const SizedBox(
+                              width: 5,
+                            ),
+                            Text(
+                              _selectedEventDocs[index]['content'],
+                            ),
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () {
+                            TextEditingController controller =
+                                TextEditingController();
+                            controller.text =
+                                _selectedEventDocs[index].get('content');
+                            Timestamp timeStampOfDate =
+                                _selectedEventDocs[index].get('date');
+                            DateTime date = timeStampOfDate.toDate();
 
-                          Get.defaultDialog(
-                            title: '스케줄 내용 고치기',
-                            content: StatefulBuilder(
-                              builder: (context, setState) {
-                                return Column(
-                                  children: [
-                                    TextButton(
-                                      onPressed: () async {
-                                        DateTime? pickedDate =
-                                            await DatePicker.showDatePicker(
-                                                context,
-                                                locale: LocaleType.ko);
-                                        if (pickedDate != null) {
-                                          setState(() {
-                                            date = pickedDate;
-                                          });
-                                        }
-                                      },
-                                      child: Text(
-                                        '${date.year}년 ${date.month}월 ${date.day}일',
-                                        style: const TextStyle(fontSize: 17),
+                            Get.defaultDialog(
+                              title: '일정 고치기',
+                              content: StatefulBuilder(
+                                builder: (context, setState) {
+                                  return Column(
+                                    children: [
+                                      TextButton(
+                                        onPressed: () async {
+                                          DateTime? pickedDate =
+                                              await DatePicker.showDatePicker(
+                                                  context,
+                                                  locale: LocaleType.ko);
+                                          if (pickedDate != null) {
+                                            setState(() {
+                                              date = pickedDate;
+                                            });
+                                          }
+                                        },
+                                        child: Text(
+                                          '${date.year}년 ${date.month}월 ${date.day}일',
+                                          style: const TextStyle(fontSize: 17),
+                                        ),
                                       ),
-                                    ),
-                                    TextField(
-                                      controller: controller,
-                                      keyboardType: TextInputType.text,
-                                      maxLines: null,
-                                      autofocus: true,
-                                      decoration: const InputDecoration(
-                                        filled: true,
-                                        border: OutlineInputBorder(),
-                                        contentPadding:
-                                            EdgeInsets.fromLTRB(10, 0, 10, 0),
-                                        hintText: '일정을 입력하세요.',
+                                      TextField(
+                                        controller: controller,
+                                        keyboardType: TextInputType.text,
+                                        maxLines: null,
+                                        autofocus: true,
+                                        decoration: const InputDecoration(
+                                          filled: true,
+                                          border: OutlineInputBorder(),
+                                          contentPadding:
+                                              EdgeInsets.fromLTRB(10, 0, 10, 0),
+                                          hintText: '일정을 입력하세요.',
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            textCancel: '취소',
-                            textConfirm: '수정',
-                            confirmTextColor: Colors.white,
-                            onConfirm: () {
-                              setState(() {
-                                _selectedEventDocs[index].reference.update({
-                                  'date':
-                                      DateTime(date.year, date.month, date.day),
-                                  'content': controller.text,
-                                  'time': Timestamp.now(),
+                                    ],
+                                  );
+                                },
+                              ),
+                              textCancel: '취소',
+                              textConfirm: '수정',
+                              confirmTextColor: Colors.white,
+                              onConfirm: () {
+                                setState(() {
+                                  _selectedEventDocs[index].reference.update({
+                                    'date': DateTime(
+                                        date.year, date.month, date.day),
+                                    'content': controller.text,
+                                    'time': Timestamp.now(),
+                                  });
+                                  _eventDocs =
+                                      getEventDocsOfTheMonth(_selectedDay);
+                                  Get.back();
                                 });
-                                _eventDocs =
-                                    getEventDocsOfTheMonth(_selectedDay);
-                                Get.back();
-                              });
-                            },
-                          );
-                        },
+                              },
+                            );
+                          },
+                        ),
+                        onLongPress: () {},
                       ),
-                      onLongPress: () {},
-                    ),
-                  );
-                },
-                separatorBuilder: (context, index) => const Divider(),
+                    );
+                  },
+                  separatorBuilder: (context, index) => const Divider(),
+                ),
               ),
+            ],
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          TextEditingController controller = TextEditingController();
+
+          Get.defaultDialog(
+            title: '일정 입력',
+            content: Column(
+              children: [
+                Text(
+                    '${_selectedDay.year}년 ${_selectedDay.month}월 ${_selectedDay.day}일'),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.text,
+                  maxLines: null,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    filled: true,
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                    hintText: '일정을 입력하세요.',
+                  ),
+                ),
+              ],
             ),
-          ],
-        );
-      },
+            textConfirm: '저장',
+            confirmTextColor: Colors.white,
+            onConfirm: () async {
+              if (controller.text.trim() == '') {
+                return;
+              }
+              await _db.collection('schedule').add({
+                'user': Get.find<UserController>().user.value,
+                'date': DateTime(
+                    _selectedDay.year, _selectedDay.month, _selectedDay.day),
+                'content': controller.text,
+                'time': Timestamp.now(),
+              });
+              setState(() {
+                _eventDocs = getEventDocsOfTheMonth(_selectedDay);
+                Get.back();
+              });
+            },
+            textCancel: '취소',
+          );
+        },
+        child: const Icon(Icons.add, size: 30),
+      ),
     );
   }
 }
