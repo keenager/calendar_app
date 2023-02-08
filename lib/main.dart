@@ -14,6 +14,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await initializeDateFormatting();
+  // final fcmToken = await FirebaseMessaging.instance.getToken();
+  // print('fcmToken: $fcmToken');
   runApp(const MyApp());
 }
 
