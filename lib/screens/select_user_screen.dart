@@ -1,23 +1,13 @@
-import 'package:calendar_app/controllers/user_controller.dart';
+import 'package:calendar_app/providers/user_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 
 class SelectUser extends StatelessWidget {
   const SelectUser({Key? key}) : super(key: key);
 
-  void setUser(String user) {
-    Get.find<UserController>()
-      ..prefs.setString('user', user)
-      ..changeUser(user);
-    Get.snackbar(
-      '사용자 선택',
-      '사용자 $user가 선택되었습니다.',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    context.read<UserProvider>().getCurrentUser();
     return Scaffold(
       appBar: AppBar(
         title: const Text('사용자 선택'),
@@ -27,7 +17,7 @@ class SelectUser extends StatelessWidget {
             style: ButtonStyle(
                 foregroundColor: MaterialStateProperty.all(Colors.white)),
             icon: const Icon(Icons.supervised_user_circle),
-            label: Obx(() => Text(Get.find<UserController>().user.value)),
+            label: Text(context.watch<UserProvider>().user),
             onPressed: null,
           ),
         ],
@@ -38,14 +28,14 @@ class SelectUser extends StatelessWidget {
           children: [
             ElevatedButton(
               onPressed: () {
-                setUser('YS');
+                context.read<UserProvider>().setUser(context, 'YS');
               },
               child: const Text('용수'),
             ),
             const SizedBox(width: 20),
             ElevatedButton(
               onPressed: () {
-                setUser('MY');
+                context.read<UserProvider>().setUser(context, 'MY');
               },
               child: const Text('미영'),
             ),

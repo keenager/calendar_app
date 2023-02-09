@@ -1,12 +1,17 @@
-import 'package:calendar_app/screens/calendar_screen.dart';
-import 'package:calendar_app/screens/home_screen.dart';
-import 'package:calendar_app/screens/news_list_screen.dart';
-import 'package:calendar_app/screens/select_user_screen.dart';
+import 'package:calendar_app/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+import 'providers/media_provider.dart';
+import 'screens/home_screen.dart';
+import 'screens/calendar_screen.dart';
+import 'screens/cafe_upload_screen.dart';
+import 'screens/news_list_screen.dart';
+import 'screens/select_user_screen.dart';
 import 'firebase_options.dart';
+
+//TODO: photo gallery -> other?
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,25 +29,37 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'Calendar app',
-      debugShowCheckedModeBanner: false,
-      initialRoute: '/home',
-      getPages: [
-        GetPage(name: '/home', page: () => const HomeScreen()),
-        GetPage(name: '/calendar', page: () => const CalendarScreen()),
-        GetPage(name: '/news', page: () => const NewsListScreen()),
-        GetPage(name: '/user', page: () => const SelectUser()),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => MediaProvider()),
+        ChangeNotifierProvider(create: (context) => UserProvider()),
       ],
-      theme: ThemeData(
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 10,
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
+      child: MaterialApp(
+        title: 'Calendar app',
+        debugShowCheckedModeBanner: false,
+        initialRoute: '/home',
+        routes: {
+          '/home': (context) => const HomeScreen(),
+          '/calendar': (context) => const CalendarScreen(),
+          '/cafe': (context) => const CafeUploadScreen(),
+          '/news': (context) => const NewsListScreen(),
+          '/user': (context) => const SelectUser(),
+        },
+        theme: ThemeData(
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              elevation: 10,
+              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              textStyle: const TextStyle(fontSize: 15),
+            ),
+          ),
+          dialogTheme: DialogTheme(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(25),
             ),
-            textStyle: const TextStyle(fontSize: 25),
           ),
         ),
       ),

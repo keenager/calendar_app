@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -11,15 +10,19 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => Get.toNamed('/calendar'),
-              child: const Text('일 정'),
+              onPressed: () => Navigator.pushNamed(context, '/calendar'),
+              child: const Text('일 정', style: TextStyle(fontSize: 25)),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => Get.toNamed('/news'),
-              child: const Text('뉴 스'),
+              onPressed: () => Navigator.pushNamed(context, '/cafe'),
+              child: const Text('사진 올리기', style: TextStyle(fontSize: 25)),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/news'),
+              child: const Text('뉴 스', style: TextStyle(fontSize: 25)),
             ),
           ],
         ),

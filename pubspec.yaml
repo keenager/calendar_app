@@ -30,14 +30,16 @@ dependencies:
   cloud_firestore: ^4.3.0
   cupertino_icons: ^1.0.2
   firebase_core: ^2.4.0
-  firebase_messaging: ^14.2.0
   flutter:
     sdk: flutter
   flutter_datetime_picker: ^1.5.1
-  get: ^4.6.5
   html: ^0.15.0
   http: ^0.13.4
   intl: ^0.17.0
+  permission_handler: ^10.2.0
+  photo_gallery: ^1.1.1
+  provider: ^6.0.5
+  share_plus: ^6.3.0
   shared_preferences: ^2.0.15
   table_calendar: ^3.0.4
   url_launcher: ^6.1.5
