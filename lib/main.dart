@@ -56,6 +56,11 @@ class MyApp extends StatelessWidget {
               textStyle: const TextStyle(fontSize: 15),
             ),
           ),
+          inputDecorationTheme: const InputDecorationTheme(
+            filled: true,
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+          ),
           dialogTheme: DialogTheme(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(25),

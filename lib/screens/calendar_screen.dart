@@ -43,6 +43,140 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     context.read<UserProvider>().getCurrentUser();
+    TextEditingController textController = TextEditingController();
+
+    Future<void> saveSchedule() async {
+      if (textController.text.trim() == '') {
+        return;
+      }
+      if (context.read<UserProvider>().user == 'unselected') {
+        Navigator.pushNamed(context, '/user');
+        return;
+      }
+      await _db.collection('schedule').add({
+        'user': context.read<UserProvider>().user,
+        'date':
+            DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day),
+        'content': textController.text,
+        'time': Timestamp.now(),
+      });
+      setState(() {
+        _eventDocs = getEventDocsOfTheMonth(_selectedDay);
+        Navigator.pop(context);
+      });
+    }
+
+    Future<void> updateSchedule(BuildContext context, int index) async {
+      textController.text = _selectedEventDocs[index].get('content');
+      Timestamp timeStampOfDate = _selectedEventDocs[index].get('date');
+      DateTime date = timeStampOfDate.toDate();
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text(
+            '일정 고치기',
+            textAlign: TextAlign.center,
+          ),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () async {
+                      DateTime? pickedDate = await DatePicker.showDatePicker(
+                          context,
+                          locale: LocaleType.ko);
+                      if (pickedDate != null) {
+                        setState(() {
+                          date = pickedDate;
+                        });
+                      }
+                    },
+                    child: Text(
+                      '${date.year}년 ${date.month}월 ${date.day}일',
+                      style: const TextStyle(fontSize: 17),
+                    ),
+                  ),
+                  TextField(
+                    controller: textController,
+                    keyboardType: TextInputType.text,
+                    maxLines: null,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: '일정을 입력하세요.',
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: const ButtonStyle(
+                  backgroundColor: MaterialStatePropertyAll(Colors.white)),
+              child: const Text(
+                '취소',
+                style: TextStyle(color: Colors.blue),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _selectedEventDocs[index].reference.update({
+                    'date': DateTime(date.year, date.month, date.day),
+                    'content': textController.text,
+                    'time': Timestamp.now(),
+                  });
+                  _eventDocs = getEventDocsOfTheMonth(_selectedDay);
+                  Navigator.pop(context);
+                });
+              },
+              child: const Text('수정'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Future<bool> confirmDelete(
+        BuildContext context, DismissDirection direction) async {
+      bool isConfirm = false;
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: const Text(
+            '이 스케줄을 지울까요?',
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: const ButtonStyle(
+                  backgroundColor: MaterialStatePropertyAll(Colors.white)),
+              child: const Text(
+                '취소',
+                style: TextStyle(color: Colors.blue),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                isConfirm = true;
+                Navigator.pop(context);
+              },
+              child: const Text('삭제'),
+            ),
+          ],
+        ),
+      );
+      return isConfirm;
+    }
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -166,44 +300,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: List.generate(
-                              2,
-                              (_) => const Icon(Icons.delete,
-                                  color: Colors.white)),
+                            2,
+                            (_) =>
+                                const Icon(Icons.delete, color: Colors.white),
+                          ),
                         ),
                       ),
                       confirmDismiss: (direction) async {
-                        bool isConfirm = false;
-                        await showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            content: const Text(
-                              '이 스케줄을 지울까요?',
-                              textAlign: TextAlign.center,
-                            ),
-                            actions: [
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                style: const ButtonStyle(
-                                    backgroundColor:
-                                        MaterialStatePropertyAll(Colors.white)),
-                                child: const Text(
-                                  '취소',
-                                  style: TextStyle(color: Colors.blue),
-                                ),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  isConfirm = true;
-                                  Navigator.pop(context);
-                                },
-                                child: const Text('삭제'),
-                              ),
-                            ],
-                          ),
-                        );
-                        return isConfirm;
+                        return await confirmDelete(context, direction);
                       },
                       onDismissed: (direction) {
                         setState(() {
@@ -232,107 +336,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 style: const TextStyle(color: Colors.white),
                               ),
                             ),
-                            const SizedBox(
-                              width: 5,
-                            ),
-                            Text(
-                              _selectedEventDocs[index]['content'],
-                            ),
+                            const SizedBox(width: 5),
+                            Text(_selectedEventDocs[index]['content']),
                           ],
                         ),
                         trailing: IconButton(
                           icon: const Icon(Icons.edit),
                           onPressed: () {
-                            TextEditingController controller =
-                                TextEditingController();
-                            controller.text =
-                                _selectedEventDocs[index].get('content');
-                            Timestamp timeStampOfDate =
-                                _selectedEventDocs[index].get('date');
-                            DateTime date = timeStampOfDate.toDate();
-
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text(
-                                  '일정 고치기',
-                                  textAlign: TextAlign.center,
-                                ),
-                                content: StatefulBuilder(
-                                  builder: (context, setState) {
-                                    return Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        TextButton(
-                                          onPressed: () async {
-                                            DateTime? pickedDate =
-                                                await DatePicker.showDatePicker(
-                                                    context,
-                                                    locale: LocaleType.ko);
-                                            if (pickedDate != null) {
-                                              setState(() {
-                                                date = pickedDate;
-                                              });
-                                            }
-                                          },
-                                          child: Text(
-                                            '${date.year}년 ${date.month}월 ${date.day}일',
-                                            style:
-                                                const TextStyle(fontSize: 17),
-                                          ),
-                                        ),
-                                        TextField(
-                                          controller: controller,
-                                          keyboardType: TextInputType.text,
-                                          maxLines: null,
-                                          autofocus: true,
-                                          decoration: const InputDecoration(
-                                            filled: true,
-                                            border: OutlineInputBorder(),
-                                            contentPadding: EdgeInsets.fromLTRB(
-                                                10, 0, 10, 0),
-                                            hintText: '일정을 입력하세요.',
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                                actions: [
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    style: const ButtonStyle(
-                                        backgroundColor:
-                                            MaterialStatePropertyAll(
-                                                Colors.white)),
-                                    child: const Text(
-                                      '취소',
-                                      style: TextStyle(color: Colors.blue),
-                                    ),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _selectedEventDocs[index]
-                                            .reference
-                                            .update({
-                                          'date': DateTime(
-                                              date.year, date.month, date.day),
-                                          'content': controller.text,
-                                          'time': Timestamp.now(),
-                                        });
-                                        _eventDocs = getEventDocsOfTheMonth(
-                                            _selectedDay);
-                                        Navigator.pop(context);
-                                      });
-                                    },
-                                    child: const Text('수정'),
-                                  ),
-                                ],
-                              ),
-                            );
+                            updateSchedule(context, index);
                           },
                         ),
                         onLongPress: () {},
@@ -348,7 +359,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          TextEditingController controller = TextEditingController();
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
@@ -360,14 +370,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       '${_selectedDay.year}년 ${_selectedDay.month}월 ${_selectedDay.day}일'),
                   const SizedBox(height: 10),
                   TextField(
-                    controller: controller,
+                    controller: textController,
                     keyboardType: TextInputType.text,
                     maxLines: null,
                     autofocus: true,
                     decoration: const InputDecoration(
-                      filled: true,
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
                       hintText: '일정을 입력하세요.',
                     ),
                   ),
@@ -387,26 +394,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
-                    if (controller.text.trim() == '') {
-                      return;
-                    }
-                    if (context.read<UserProvider>().user == 'unselected') {
-                      Navigator.pushNamed(context, '/user');
-                      return;
-                    }
-                    await _db.collection('schedule').add({
-                      'user': context.read<UserProvider>().user,
-                      'date': DateTime(_selectedDay.year, _selectedDay.month,
-                          _selectedDay.day),
-                      'content': controller.text,
-                      'time': Timestamp.now(),
-                    });
-                    setState(() {
-                      _eventDocs = getEventDocsOfTheMonth(_selectedDay);
-                      Navigator.pop(context);
-                    });
-                  },
+                  onPressed: saveSchedule,
                   child: const Text('저장'),
                 ),
               ],
