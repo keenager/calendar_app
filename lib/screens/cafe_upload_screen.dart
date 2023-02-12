@@ -96,8 +96,10 @@ class _CafeUploadScreenState extends State<CafeUploadScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
+                    //전체선택, 전체해제
+                    bool myBool = mp.checkList[0];
                     mp.mediaList.asMap().forEach((index, media) {
-                      mp.updateCheckList(index: index, newValue: true);
+                      mp.updateCheckList(index: index, newValue: !myBool);
                     });
                     mp.updateNumSize();
                   },
