@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:provider/provider.dart';
 import '../utils/error_dialog.dart';
 import '../widgets/thumbnail_gridview.dart';
@@ -41,18 +40,18 @@ class _CafeUploadScreenState extends State<CafeUploadScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton(
-                    onPressed: () {
-                      DatePicker.showDatePicker(
-                        context,
-                        locale: LocaleType.ko,
-                        minTime: DateTime(2018, 11, 5),
-                        maxTime: DateTime(2027, 11, 5),
-                        onConfirm: (time) {
-                          setState(() {
-                            _selectedDate = time;
-                          });
-                        },
+                    onPressed: () async {
+                      DateTime? pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2018, 1, 1),
+                        lastDate: DateTime(2050, 12, 31),
                       );
+                      if (pickedDate != null) {
+                        setState(() {
+                          _selectedDate = pickedDate;
+                        });
+                      }
                     },
                     child: Text(_selectedDate == null
                         ? '날짜 선택'

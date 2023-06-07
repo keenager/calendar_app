@@ -1,7 +1,6 @@
 import 'package:calendar_app/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -85,9 +84,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 children: [
                   TextButton(
                     onPressed: () async {
-                      DateTime? pickedDate = await DatePicker.showDatePicker(
-                          context,
-                          locale: LocaleType.ko);
+                      DateTime? pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2020, 1, 1),
+                        lastDate: DateTime(2050, 12, 31),
+                        locale: const Locale('ko'),
+                      );
                       if (pickedDate != null) {
                         setState(() {
                           date = pickedDate;

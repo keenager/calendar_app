@@ -37,13 +37,15 @@ class MediaProvider with ChangeNotifier {
         await PhotoGallery.listAlbums(mediumType: MediumType.image);
     Album albumCamera =
         imageAlbums.firstWhere((album) => album.name == 'Camera');
-    MediaPage imagePage = await albumCamera.listMedia();
+    MediaPage imagePage =
+        await albumCamera.listMedia(skip: 0, take: albumCamera.count);
 
     final List<Album> videoAlbums =
         await PhotoGallery.listAlbums(mediumType: MediumType.video);
     Album albumVideo =
         videoAlbums.firstWhere((album) => album.name == 'Camera');
-    MediaPage videoPage = await albumVideo.listMedia();
+    MediaPage videoPage =
+        await albumVideo.listMedia(skip: 0, take: albumVideo.count);
 
     // 사진,동영상 리스트
     List<Medium> mediumList = [
