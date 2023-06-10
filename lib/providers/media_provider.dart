@@ -94,17 +94,17 @@ class MediaProvider with ChangeNotifier {
   }
 
   bool isChecked(Media media) {
-    return checkList[mediaList.indexOf(media)];
+    return _checkList[_mediaList.indexOf(media)];
   }
 
   void updateNumSize() {
-    _totalImageNum = mediaList
+    _totalImageNum = _mediaList
         .where((media) => isChecked(media) && media.type == MediumType.image)
         .length;
-    _totalVideoNum = mediaList
+    _totalVideoNum = _mediaList
         .where((media) => isChecked(media) && media.type == MediumType.video)
         .length;
-    int totalBytes = mediaList.fold<int>(
+    int totalBytes = _mediaList.fold<int>(
         0, (prev, media) => prev + (isChecked(media) ? media.size : 0));
     _totalFileSize =
         double.parse((totalBytes / 1024 / 1024).toStringAsFixed(2));

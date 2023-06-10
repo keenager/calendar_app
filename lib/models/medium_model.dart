@@ -24,6 +24,7 @@ class Media {
       ),
     );
   }
+
   static Future<Media> create(Medium medium) async {
     Media media = Media._create(medium);
     await media._asyncInit(medium);
