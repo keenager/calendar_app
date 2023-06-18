@@ -16,6 +16,11 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/book/index'),
+              child: const Text('독서 계획', style: TextStyle(fontSize: 25)),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
               onPressed: () => Navigator.pushNamed(context, '/cafe'),
               child: const Text('사진 올리기', style: TextStyle(fontSize: 25)),
             ),

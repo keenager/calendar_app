@@ -1,8 +1,11 @@
 import 'package:calendar_app/providers/user_provider.dart';
+import 'package:calendar_app/screens/bookSchedule/detail_screen.dart';
+import 'package:calendar_app/screens/bookSchedule/index_screen.dart';
 import 'package:calendar_app/screens/cafe_upload_screen.dart';
 import 'package:calendar_app/screens/calendar_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'providers/media_provider.dart';
@@ -22,6 +25,8 @@ void main() async {
   await initializeDateFormatting();
   // final fcmToken = await FirebaseMessaging.instance.getToken();
   // print('fcmToken: $fcmToken');
+  await Hive.initFlutter();
+  await Hive.openBox('myBox');
   runApp(const MyApp());
 }
 
@@ -42,6 +47,8 @@ class MyApp extends StatelessWidget {
         routes: {
           '/home': (context) => const HomeScreen(),
           '/calendar': (context) => const CalendarScreen(),
+          '/book/index': (context) => const BookScheduleIndexScreen(),
+          '/book/detail': (context) => const BookScheduleDetailScreen(),
           '/cafe': (context) => const CafeUploadScreen(),
           '/news': (context) => const NewsListScreen(),
           '/user': (context) => const SelectUser(),
