@@ -79,18 +79,22 @@ class _BookScheduleScreenState extends State<BookScheduleDetailScreen> {
         ],
       ),
     );
+
     if (inputText == null) {
       return;
     }
+
     _currentSchedule[rowIndex][cellIndex] = inputText;
     int plannedPage =
         int.parse(_currentSchedule[rowIndex][colNames.indexOf('계획')]);
     int readPage = int.parse(inputText);
+
     if (plannedPage != readPage) {
       //현재 rowIndex 이후의 리스트를 새로 생성
       List<List<String>> newSubList = [];
       DateTime date = DateTime.parse(_currentSchedule[rowIndex][0]);
       int modifiedPage = readPage;
+
       do {
         date = date.add(const Duration(days: 1));
         if (plannedPage < totalPage) {
@@ -158,7 +162,6 @@ class _BookScheduleScreenState extends State<BookScheduleDetailScreen> {
     super.didChangeDependencies();
   }
 
-  //TODO: 오늘 날짜에 강조 표시
   @override
   Widget build(BuildContext context) {
     return Scaffold(

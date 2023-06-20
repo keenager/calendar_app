@@ -3,54 +3,41 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
-class BookScheduleIndexScreen extends StatefulWidget {
+class BookScheduleIndexScreen extends StatelessWidget {
   const BookScheduleIndexScreen({super.key});
 
   @override
-  State<BookScheduleIndexScreen> createState() =>
-      _BookScheduleIndexScreenState();
-}
+  Widget build(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
+    String title = '';
+    String totalPage = '';
+    String dailyPage = '';
 
-class _BookScheduleIndexScreenState extends State<BookScheduleIndexScreen> {
-  final box = Hive.box('myBox');
-  Map<dynamic, dynamic>? _savedData;
-  late final List<String> _bookList;
-  late final Map<String, List<List<String>>>? _savedAllSchedules;
-  final _formKey = GlobalKey<FormState>();
-  String title = '';
-  String totalPage = '';
-  String dailyPage = '';
-
-  Map<String, int> getScheduleInfo(String title) {
-    var schedule = _savedAllSchedules![title];
-    var lastReadIndex = schedule!.lastIndexWhere((row) => row[3] != '');
-    int lastReadPage =
-        lastReadIndex >= 0 ? int.parse(schedule[lastReadIndex][3]) : 0;
-    int totalPage = int.parse(schedule.last[1]);
-    return {
-      'total': totalPage,
-      'current': lastReadPage,
-    };
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _savedData = box.get('bookSchedule');
-    // setState(() {
-    _bookList = _savedData?.keys.map((e) => e as String).toList() ?? [];
-    // });
-    var castedEntries = _savedData?.entries.map((entry) {
+    final box = Hive.box('myBox');
+    final Map<dynamic, dynamic>? savedData = box.get('bookSchedule');
+    final castedEntries = savedData?.entries.map((entry) {
       var key = entry.key as String;
       var tmp = entry.value as List;
       var value = tmp.map((e) => e as List<String>).toList();
       return MapEntry(key, value);
     });
-    _savedAllSchedules = Map.fromEntries(castedEntries ?? {});
-  }
+    final Map<String, List<List<String>>> savedAllSchedules =
+        Map.fromEntries(castedEntries ?? {});
+    final List<String> bookList = savedAllSchedules.keys.toList();
 
-  @override
-  Widget build(BuildContext context) {
+    Map<String, int> getScheduleInfo(String title) {
+      var schedule = savedAllSchedules[title];
+      int lastReadIndex = schedule!.lastIndexWhere((row) => row[3] != '');
+      //row[3]이 모두 ''이면, 즉 아직 전혀 읽지 않은 상태라면 lastReadIndex = -1 이 됨.
+      int lastReadPage =
+          lastReadIndex >= 0 ? int.parse(schedule[lastReadIndex][3]) : 0;
+      int totalPage = int.parse(schedule.last[1]);
+      return {
+        'total': totalPage,
+        'current': lastReadPage,
+      };
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('독서 계획'),
@@ -64,7 +51,7 @@ class _BookScheduleIndexScreenState extends State<BookScheduleIndexScreen> {
             SizedBox(
               width: 200,
               child: Form(
-                key: _formKey,
+                key: formKey,
                 child: Column(
                   children: [
                     TextFormField(
@@ -114,8 +101,8 @@ class _BookScheduleIndexScreenState extends State<BookScheduleIndexScreen> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  _formKey.currentState!.save();
+                if (formKey.currentState!.validate()) {
+                  formKey.currentState!.save();
                   Navigator.pushNamed(
                     context,
                     '/book/detail',
@@ -139,15 +126,15 @@ class _BookScheduleIndexScreenState extends State<BookScheduleIndexScreen> {
             const Text('저장된 스케줄'),
             Expanded(
               child: ListView.separated(
-                itemCount: _bookList.length,
+                itemCount: bookList.length,
                 itemBuilder: (context, index) {
-                  var scheduleInfo = getScheduleInfo(_bookList[index]);
+                  var scheduleInfo = getScheduleInfo(bookList[index]);
                   int total = scheduleInfo['total']!;
                   int current = scheduleInfo['current']!;
                   double process = current / total;
 
                   return Dismissible(
-                    key: ValueKey(_bookList[index]),
+                    key: ValueKey(bookList[index]),
                     background: Container(
                       color: Colors.red,
                       child: Row(
@@ -162,8 +149,8 @@ class _BookScheduleIndexScreenState extends State<BookScheduleIndexScreen> {
                       return await confirmDelete(context);
                     },
                     onDismissed: (direction) {
-                      _savedData!.remove(_bookList[index]);
-                      box.put('bookSchedule', _savedData);
+                      savedData!.remove(bookList[index]);
+                      box.put('bookSchedule', savedData);
                     },
                     child: ListTile(
                       title: LinearPercentIndicator(
@@ -173,7 +160,7 @@ class _BookScheduleIndexScreenState extends State<BookScheduleIndexScreen> {
                         progressColor: Colors.lightBlue,
                         animation: true,
                         animationDuration: 1000,
-                        leading: Text(_bookList[index],
+                        leading: Text(bookList[index],
                             style: const TextStyle(fontSize: 20)),
                         trailing: Text('${(process * 100).toStringAsFixed(1)}%',
                             style: const TextStyle(fontSize: 20)),
@@ -184,7 +171,7 @@ class _BookScheduleIndexScreenState extends State<BookScheduleIndexScreen> {
                           '/book/detail',
                           arguments: <String, String>{
                             'isNew': '',
-                            'title': _bookList[index],
+                            'title': bookList[index],
                           },
                         );
                       },
